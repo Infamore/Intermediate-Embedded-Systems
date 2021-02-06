@@ -1,0 +1,89 @@
+////Esa Soudbakhsh
+////esoud001@ucr.edu
+////gdoc summary: https://docs.google.com/document/d/1ltoX2WgT-1VJnBAICqikJqnLL-4L2eZ49uW6qP6v3ic/edit?usp=sharing
+////video summary: https://www.youtube.com/watch?v=CsP8vw75mB0
+
+#include <LiquidCrystal.h>
+
+//initialize and declare variables
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+int led = 8;
+int led1 = 7;
+int led2 = 6;
+int trigpin = 9;
+int echopin = 10;
+
+void setup() {
+  Serial.begin(9600);
+  //led's and the trigpin on the motion sensor are outputs while the echopin is an input w
+  pinMode(led, OUTPUT);
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(trigpin, OUTPUT);
+  pinMode(echopin, INPUT);
+  //initializes the amount of slots on the LCD screen that will be used for display
+  lcd.begin(16, 2);
+}
+
+void loop() {
+  //Allow the ultrasonic sensor to emit soundwaves to detect distance
+  long distance, duration;
+  digitalWrite(trigpin, HIGH);
+  delayMicroseconds(1000);
+  digitalWrite(trigpin, LOW);
+  duration = pulseIn(echopin, HIGH);
+  distance = convertCM(duration);
+  //if distance is less than 10 cm activate the led to flash blue
+  if (distance <= 10) {
+    //if distance less than or equal to 10 cm, turn on led 
+    char color[20] = "Blue";
+    ledfading(led);
+    print(color, distance);
+  //if the distance is between 10 cm and 20 cm activate the led to flash red
+  }
+  else if (distance > 10 && distance < 20) {
+    //if distance greater than 10 cm, turn off led
+    char color[20] = "Red";
+    ledfading(led1);
+    print(color, distance);
+  }
+  //if the distance is past 20 cm activate the function to flash green
+  else if (distance >= 20) {
+    char color[20] = "Green";
+    ledfading(led2);
+    print(color, distance);
+  }
+  //
+}
+//converts the time the sound waves returns to the echopin and converts that into a distance of centimeters
+long convertCM (long microseconds) {
+  return microseconds / 2 / 29;
+}
+//function to fade led
+void ledfading(int LED) {
+  //i variable will represent the brightness of the of the led and initially set at 0
+  int i = 0;
+  //for loop utilized to reach maximum brightness of led port passed into this function using analogWrite
+  for (i; i <= 255; i += 15) {
+    analogWrite(LED, i);
+    //delay to see dimming effect
+    delay(30);
+  }
+  //i variable will be at maximum and has to be decremented for fade effect
+  for (i; i >= 0; i -= 15)  {
+    analogWrite(LED, i);
+    //delay to see dimming effect
+    delay(30);
+  }
+}
+//displays output
+void print(char led[], double d) {
+    lcd.setCursor(0, 0);
+    lcd.print("Color: ");
+    lcd.print(led);
+    lcd.setCursor(0,1);
+    lcd.print("Distance:");
+    lcd.print(d, 1);
+    lcd.print(" CM");
+}
