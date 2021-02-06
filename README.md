@@ -1,1 +1,3 @@
-# Intermediate-Embedded-Systems from Zybooks taken at UCR
+CS 122A: Intermediate Embedded and Real-Time Systems 
+Zybooks
+UCR
