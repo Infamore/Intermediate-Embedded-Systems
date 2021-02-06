@@ -1,0 +1,188 @@
+/////Esa Soudbakhsh
+/////esoud001@ucr.edu
+/////gdoc summary: https://docs.google.com/document/d/1R5pDvrjEFTMbnIZ80JonbPDWTF-e97OuKEElLOrwybA/edit?usp=sharing
+/////video summary: https://www.youtube.com/watch?v=z9-LviTw0YU&feature=youtu.be
+
+#include "RIMS.h"
+volatile int TimerFlag = 0;
+void TimerISR() {
+   TimerFlag = 1;
+}
+
+////global variables
+unsigned int tmpB = 0; //tmpB is initially zero
+int integral = 0;
+int derivative = 0; 
+int error = 0;
+int actuator = 0;
+int F_ball = 0;
+int V_ball = 0;
+int P_ball = 0;
+int M_ball = 0.03 / 9.8; //zybooks says ball weight is 0.03. W = mg. Must find mass for force equations
+
+
+///include plant calculations in both tick functions
+void calcF_ball() {
+   F_ball = 0.5*(actuator) + 0.3;
+}
+
+void calcV_ball() {
+   V_ball += (F_ball / M_ball)* 0.05;
+}
+
+void calcP_ball() {
+   P_ball += V_ball*0.05;  
+}
+
+
+
+enum manual_SM {start, up, down, stable} manual;
+
+void manual_control()
+{
+   switch (manual) //transitions
+   {
+      case start: 
+         if (A6 == 1)
+            manual = up;
+         else if (A7 == 1)
+            manual = down;
+         else if (A6 == 1 && A7 == 1)
+            manual = start; //waits here another tick, otherwise make another state or use stable
+      break;
+      
+      case up:
+         if (A6 == 1)
+            manual = up;
+         else if (A7 == 1)
+            manual = down;
+         else if (A6 == 1 && A7 == 1)
+            manual = start; //waits here another tick, otherwise make another state or use stable
+      break;
+      
+      case down:
+         if (A6 == 1)
+            manual = up;
+         else if (A7 == 1)
+            manual = down;
+         else if (A6 == 1 && A7 == 1)
+            manual = start; //waits here another tick, otherwise make another state or use stable
+      break;
+      
+      case stable:
+         //wait for next cycle
+      break;
+      
+      default:
+      
+      break;
+   }
+   
+   switch (manual) //outputs
+   {
+      case start:
+      
+      break;
+      
+      case up:
+         actuator += 0.0075;
+         calc_Fball();
+         calc_Vball();
+         calc_Pball();
+         B = P_ball;
+      break;
+      
+      case down:
+         actuator -= 0.0075;
+         calc_Fball()
+         calc_Vball();
+         calc_Pball();
+         B = P_ball;
+      break;
+      
+      case stable:
+      
+      break;
+   }
+}
+
+enum pid_SM {start, PID_calculate} pid;
+
+
+void calculate_error() {
+   unsigned int desired = A & 0x64; //100 
+
+   unsigned int error = desired - B; //100 - what the value is on portB
+}
+
+void calculate_integral() {
+   integral = integral + error;
+}
+
+void calculate_derivative() {
+   derivative = B - tmpB;   
+      
+   tmpB = B & 0xFF;   
+   //saves the current to tmp so that it becomes the "previous value" for the next cycle
+}
+
+void calculate_actuator() {
+     actuator = (0.05*error) + (0.001*integral) - (2.5*derivative); 
+}
+
+
+void PID_control()
+{
+   switch (pid) //transition
+   {
+      case start:
+         pid = PID_calculate;
+      break;
+      
+      case PID_calculate:
+         //continue calculating
+      break;
+      
+      default:
+      
+      break;
+   }
+   
+   switch (pid) //outputs
+   {
+      case start:
+      
+      break;
+      
+      case PID_calculate:
+         calculate_error();
+         calculate_integral();
+         calculate_derivative();
+         calculate_actuator(); 
+         calc_Fball()
+         calc_Vball();
+         calc_Pball();
+         B = P_ball;
+      break;
+   
+      
+      default:
+      
+      break;
+   }
+}
+
+
+int main(){
+   TimerSet(1000);
+   TimerOn();
+   while(1){ //create a third SM and call that tick function first if deciding which mode needs to be a SM
+      if (A0 == 1)
+         PID_control();
+      else if (A0 == 0)
+         manual_control();
+      
+      while(!TimerFlag);
+      TimerFlag=0;
+   }
+}
