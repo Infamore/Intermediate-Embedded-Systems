@@ -1,0 +1,184 @@
+#include <stdio.h>
+
+// BEGIN Items to mimick RIMS. Don't modify this code. 
+
+unsigned short A7, A6, A5, A4, A3, A2, A1, A0; // Note: Setting or reading A or B as a group, as in B = 0, isn't supported
+unsigned short B7, B6, B5, B4, B3, B2, B1, B0;
+char inputValues[100][8]; // Inputs A7..A0 for up to 100 ticks.
+int currTick = 0;
+
+void SetAInputs() {
+    A0 = (inputValues[currTick][7] == '0') ? 0 : 1;
+    A1 = (inputValues[currTick][6] == '0') ? 0 : 1;
+    A2 = (inputValues[currTick][5] == '0') ? 0 : 1;
+    A3 = (inputValues[currTick][4] == '0') ? 0 : 1;
+    A4 = (inputValues[currTick][3] == '0') ? 0 : 1;
+    A5 = (inputValues[currTick][2] == '0') ? 0 : 1;
+    A6 = (inputValues[currTick][1] == '0') ? 0 : 1;
+    A7 = (inputValues[currTick][0] == '0') ? 0 : 1;
+}
+
+
+void PrintAInputs() {
+    printf("A7..A0: %d%d%d%d%d%d%d%d\n", A7, A6, A5, A4, A3, A2, A1, A0);
+}
+
+void TimerTick() {
+    printf("%d: %d%d%d%d%d%d%d%d\n", currTick, B7, B6, B5, B4, B3, B2, B1, B0);
+    currTick += 1;
+    SetAInputs();
+}
+
+// END Items to mimick RIMS
+
+
+// Write your synchSM tick functions here
+
+enum first_control { first_init, first_on, first_off } first;
+
+void first_tick() {
+    switch (first) //transitions
+    {
+    case first_init:
+        first = first_off;
+        break;
+
+    case first_on:
+        first = first_off;
+        break;
+
+    case first_off:
+        first = first_on;
+        break;
+
+    default:
+        first = first_init;
+        break;
+    }
+
+    switch (first) //outputs
+    {
+    case first_init:
+        B0 = 0; B1 = 0; B2 = 0; B3 = 0;
+        break;
+
+    case first_on:
+        B0 = 1; B1 = 1; B2 = 1; B3 = 1;
+        break;
+
+    case first_off:
+        B0 = 0; B1 = 0; B2 = 0; B3 = 0;
+        break;
+
+    default:
+
+        break;
+    }
+}
+
+
+enum second_input { A1_start, A1_1000, A1_1100, A1_1110, A1_1111 } A1_input;
+
+void second_tick()
+{
+    switch (A1_input) //transitions
+    {
+    case A1_start:
+        A1_input = A1_1000;
+        break;
+
+    case A1_1000:
+
+        A1_input = A1_1100;
+
+        break;
+
+    case A1_1100:
+
+        A1_input = A1_1110;
+
+        break;
+
+    case A1_1110:
+
+        A1_input = A1_1111;
+
+        break;
+
+    case A1_1111:
+
+        A1_input = A1_1000;
+
+        break;
+
+    default:
+        A1_input = A1_start;
+        break;
+    }
+
+    switch (A1_input)
+    {
+    case A1_start:
+        B4 = 0; B5 = 0; B6 = 0; B7 = 1;
+        break;
+
+    case A1_1000:
+        B4 = 0; B5 = 0; B6 = 0; B7 = 1;
+        break;
+
+    case A1_1100:
+        B4 = 0; B5 = 0; B6 = 1; B7 = 1;
+        break;
+
+    case A1_1110:
+        B4 = 0; B5 = 1; B6 = 1; B7 = 1;
+        break;
+
+    case A1_1111:
+        B4 = 1; B5 = 1; B6 = 1; B7 = 1;
+        break;
+
+    default:
+
+        break;
+
+    }
+
+}
+
+
+
+int main() {
+    // The items below mimick RIMS by pre-reading all input vectors; don't modify this code 
+    int numInputVectors;
+    scanf("%d", &numInputVectors); // Reads input test vectors
+    for (int i = 0; i < numInputVectors; ++i) {
+        scanf("%s", inputValues[i]);
+    }
+    SetAInputs(); // Set initial values for input A
+
+
+    // B = 0 itself doesn't work, so assign all bits individually
+    B7 = 0; B6 = 0; B5 = 0; B4 = 0;
+    B3 = 0; B2 = 0; B1 = 0; B0 = 0;
+
+    // Initialize your synchSM states here
+    first = first_init;
+    A1_input = A1_start;
+
+    while (currTick < numInputVectors) {
+        // Call your synchSM tick functions here
+        first_tick();
+        second_tick();
+
+        TimerTick(); // This function prints all B output values and updates a global tick variable
+    }
+
+    return 0;
+}
+
+
+
+
+
+
